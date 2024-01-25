@@ -1,0 +1,584 @@
+{
+  "version": "1.00",
+  "projectName": "Project description",
+  "author": "s",
+  "items": [
+    {
+      "parentId": 0,
+      "type": "textItem",
+      "defaultValue": "-1",
+      "item": {
+        "textLength": 11,
+        "itemType": "PLAIN_TEXT",
+        "name": "Humidity",
+        "variableName": "RHString",
+        "id": 1,
+        "eepromAddress": -1,
+        "readOnly": true,
+        "localOnly": false,
+        "visible": true,
+        "staticDataInRAM": false
+      }
+    },
+    {
+      "parentId": 0,
+      "type": "textItem",
+      "defaultValue": "-1",
+      "item": {
+        "textLength": 11,
+        "itemType": "PLAIN_TEXT",
+        "name": "Temperature",
+        "variableName": "TString",
+        "id": 2,
+        "eepromAddress": -1,
+        "readOnly": true,
+        "localOnly": false,
+        "visible": true,
+        "staticDataInRAM": false
+      }
+    },
+    {
+      "parentId": 0,
+      "type": "boolItem",
+      "defaultValue": "true",
+      "item": {
+        "naming": "ON_OFF",
+        "name": "LED",
+        "variableName": "EnableLED",
+        "id": 3,
+        "eepromAddress": 5,
+        "functionName": "enableLEDCallback",
+        "readOnly": false,
+        "localOnly": false,
+        "visible": true,
+        "staticDataInRAM": false
+      }
+    },
+    {
+      "parentId": 0,
+      "type": "boolItem",
+      "defaultValue": "true",
+      "item": {
+        "naming": "ON_OFF",
+        "name": "Controller",
+        "variableName": "ControllerBool",
+        "id": 8,
+        "eepromAddress": 4,
+        "functionName": "controllerEnableCallback",
+        "readOnly": false,
+        "localOnly": false,
+        "visible": true,
+        "staticDataInRAM": false
+      }
+    },
+    {
+      "parentId": 0,
+      "type": "enumItem",
+      "defaultValue": "1",
+      "item": {
+        "enumEntries": [
+          "Pin",
+          "Fruit",
+          "Oyster",
+          "Lions Mane",
+          "Shiitake",
+          "Reishi",
+          "Custom1",
+          "Custom2",
+          "Custom3",
+          "Custom4",
+          "Custom5",
+          "Change6"
+        ],
+        "name": "Presets",
+        "variableName": "Presets",
+        "id": 24,
+        "eepromAddress": 22,
+        "functionName": "PresetsCallback",
+        "readOnly": false,
+        "localOnly": false,
+        "visible": true,
+        "staticDataInRAM": false
+      }
+    },
+    {
+      "parentId": 0,
+      "type": "subMenu",
+      "item": {
+        "secured": false,
+        "name": "Settings",
+        "variableName": "Options",
+        "id": 4,
+        "eepromAddress": -1,
+        "readOnly": false,
+        "localOnly": false,
+        "visible": true,
+        "staticDataInRAM": false
+      }
+    },
+    {
+      "parentId": 4,
+      "type": "analogItem",
+      "defaultValue": "0",
+      "item": {
+        "maxValue": 95,
+        "offset": 0,
+        "divisor": 1,
+        "unitName": "%",
+        "step": 1,
+        "name": "Set Humidity",
+        "variableName": "RHSetPoint",
+        "id": 5,
+        "eepromAddress": 6,
+        "functionName": "RHChangedCallback",
+        "readOnly": false,
+        "localOnly": false,
+        "visible": true,
+        "staticDataInRAM": false
+      }
+    },
+    {
+      "parentId": 4,
+      "type": "analogItem",
+      "defaultValue": "5",
+      "item": {
+        "maxValue": 60,
+        "offset": 0,
+        "divisor": 1,
+        "unitName": "",
+        "step": 1,
+        "name": "FAE Per Hr",
+        "variableName": "FAEPerHour",
+        "id": 6,
+        "eepromAddress": 8,
+        "functionName": "FAEChangedCallback",
+        "readOnly": false,
+        "localOnly": false,
+        "visible": true,
+        "staticDataInRAM": false
+      }
+    },
+    {
+      "parentId": 4,
+      "type": "actionMenu",
+      "item": {
+        "name": "Save Settings",
+        "variableName": "SaveSettings",
+        "id": 17,
+        "eepromAddress": -1,
+        "functionName": "SaveSettingsCallback",
+        "readOnly": false,
+        "localOnly": false,
+        "visible": true,
+        "staticDataInRAM": false
+      }
+    },
+    {
+      "parentId": 4,
+      "type": "actionMenu",
+      "item": {
+        "name": "Calibrate FAE",
+        "variableName": "CalibrateFAE",
+        "id": 21,
+        "eepromAddress": -1,
+        "functionName": "CalibrateFAECallback",
+        "readOnly": false,
+        "localOnly": false,
+        "visible": true,
+        "staticDataInRAM": false
+      }
+    },
+    {
+      "parentId": 4,
+      "type": "subMenu",
+      "item": {
+        "secured": false,
+        "name": "Advanced",
+        "variableName": "Advanced",
+        "id": 19,
+        "eepromAddress": -1,
+        "readOnly": false,
+        "localOnly": false,
+        "visible": true,
+        "staticDataInRAM": false
+      }
+    },
+    {
+      "parentId": 19,
+      "type": "boolItem",
+      "defaultValue": "true",
+      "item": {
+        "naming": "ON_OFF",
+        "name": "Enable Fan",
+        "variableName": "enableFan",
+        "id": 18,
+        "eepromAddress": 16,
+        "readOnly": false,
+        "localOnly": false,
+        "visible": true,
+        "staticDataInRAM": false
+      }
+    },
+    {
+      "parentId": 19,
+      "type": "boolItem",
+      "defaultValue": "true",
+      "item": {
+        "naming": "TRUE_FALSE",
+        "name": "LED Show RH",
+        "variableName": "LEDShowRH",
+        "id": 23,
+        "eepromAddress": 21,
+        "functionName": "LEDShowRHCallback",
+        "readOnly": false,
+        "localOnly": false,
+        "visible": true,
+        "staticDataInRAM": false
+      }
+    },
+    {
+      "parentId": 19,
+      "type": "analogItem",
+      "defaultValue": "24",
+      "item": {
+        "maxValue": 24,
+        "offset": 0,
+        "divisor": 1,
+        "unitName": " hrs",
+        "step": 1,
+        "name": "Light On Time",
+        "variableName": "LightOnTime",
+        "id": 22,
+        "eepromAddress": 19,
+        "functionName": "lightOntimeCallback",
+        "readOnly": false,
+        "localOnly": false,
+        "visible": true,
+        "staticDataInRAM": false
+      }
+    },
+    {
+      "parentId": 19,
+      "type": "analogItem",
+      "defaultValue": "1",
+      "item": {
+        "maxValue": 60,
+        "offset": 0,
+        "divisor": 1,
+        "unitName": " min",
+        "step": 1,
+        "name": "FAE On Time",
+        "variableName": "FAEOnTime",
+        "id": 20,
+        "eepromAddress": 17,
+        "functionName": "FAEOnTimeCallBack",
+        "readOnly": false,
+        "localOnly": false,
+        "visible": true,
+        "staticDataInRAM": false
+      }
+    },
+    {
+      "parentId": 19,
+      "type": "analogItem",
+      "defaultValue": "98",
+      "item": {
+        "maxValue": 100,
+        "offset": 0,
+        "divisor": 1,
+        "unitName": " %",
+        "step": 1,
+        "name": "Max RH",
+        "variableName": "MaxRH",
+        "id": 25,
+        "eepromAddress": 24,
+        "functionName": "MaxRHCallback",
+        "readOnly": false,
+        "localOnly": false,
+        "visible": true,
+        "staticDataInRAM": false
+      }
+    },
+    {
+      "parentId": 19,
+      "type": "subMenu",
+      "item": {
+        "secured": false,
+        "name": "Edit PID Variables",
+        "variableName": "EditPIDVariables",
+        "id": 9,
+        "eepromAddress": -1,
+        "readOnly": false,
+        "localOnly": false,
+        "visible": true,
+        "staticDataInRAM": false
+      }
+    },
+    {
+      "parentId": 9,
+      "type": "analogItem",
+      "defaultValue": "0",
+      "item": {
+        "maxValue": 2000,
+        "offset": 0,
+        "divisor": 1,
+        "unitName": "",
+        "step": 1,
+        "name": "P Value",
+        "variableName": "PValue",
+        "id": 14,
+        "eepromAddress": 10,
+        "functionName": "PValueCallback",
+        "readOnly": false,
+        "localOnly": false,
+        "visible": true,
+        "staticDataInRAM": false
+      }
+    },
+    {
+      "parentId": 9,
+      "type": "analogItem",
+      "defaultValue": "0",
+      "item": {
+        "maxValue": 10000,
+        "offset": 0,
+        "divisor": 1000,
+        "unitName": "",
+        "step": 1,
+        "name": "I Value",
+        "variableName": "IValue",
+        "id": 15,
+        "eepromAddress": 12,
+        "functionName": "IValueCallback",
+        "readOnly": false,
+        "localOnly": false,
+        "visible": true,
+        "staticDataInRAM": false
+      }
+    },
+    {
+      "parentId": 9,
+      "type": "analogItem",
+      "defaultValue": "0",
+      "item": {
+        "maxValue": 2000,
+        "offset": 0,
+        "divisor": 1,
+        "unitName": "",
+        "step": 1,
+        "name": "D Value",
+        "variableName": "DValue",
+        "id": 16,
+        "eepromAddress": 14,
+        "functionName": "DValueCallback",
+        "readOnly": false,
+        "localOnly": false,
+        "visible": true,
+        "staticDataInRAM": false
+      }
+    },
+    {
+      "parentId": 19,
+      "type": "actionMenu",
+      "item": {
+        "name": "Print Settings",
+        "variableName": "PrintSettings",
+        "id": 26,
+        "eepromAddress": -1,
+        "functionName": "PrintSettingsCallback",
+        "readOnly": false,
+        "localOnly": false,
+        "visible": true,
+        "staticDataInRAM": false
+      }
+    },
+    {
+      "parentId": 19,
+      "type": "actionMenu",
+      "item": {
+        "name": "Factory Reset",
+        "variableName": "FactoryReset",
+        "id": 13,
+        "eepromAddress": -1,
+        "functionName": "factoryReset",
+        "readOnly": false,
+        "localOnly": false,
+        "visible": true,
+        "staticDataInRAM": false
+      }
+    },
+    {
+      "parentId": 19,
+      "type": "actionMenu",
+      "item": {
+        "name": "Version",
+        "variableName": "Version",
+        "id": 27,
+        "eepromAddress": -1,
+        "functionName": "firmwareVersionCallback",
+        "readOnly": false,
+        "localOnly": false,
+        "visible": true,
+        "staticDataInRAM": false
+      }
+    }
+  ],
+  "codeOptions": {
+    "embeddedPlatform": "ARDUINO_ESP32",
+    "lastDisplayUuid": "fd998437-c4b2-4386-ba88-d0ae7c20620b",
+    "lastInputUuid": "6dd87e7d-e751-4912-a70d-91793b1d3d87",
+    "lastRemoteUuids": [
+      "2c101fec-1f7d-4ff3-8d2b-992ad41e7fcb"
+    ],
+    "lastThemeUuid": "815316bb-76c9-436a-8f83-be0bced963df",
+    "applicationUUID": "1a525a77-f493-4b28-b422-b99265950d76",
+    "applicationName": "CAVE BOX",
+    "lastProperties": [
+      {
+        "name": "DISPLAY_VARIABLE",
+        "latestValue": "gfx",
+        "subsystem": "DISPLAY"
+      },
+      {
+        "name": "DISPLAY_TYPE",
+        "latestValue": "U8G2_SSD1306_128X64_NONAME_F_HW_I2C",
+        "subsystem": "DISPLAY"
+      },
+      {
+        "name": "DISPLAY_ROTATION",
+        "latestValue": "U8G2_R2",
+        "subsystem": "DISPLAY"
+      },
+      {
+        "name": "DISPLAY_CLOCK_PIN",
+        "latestValue": "22",
+        "subsystem": "DISPLAY"
+      },
+      {
+        "name": "DISPLAY_DATA_PIN",
+        "latestValue": "21",
+        "subsystem": "DISPLAY"
+      },
+      {
+        "name": "DISPLAY_RESET_PIN",
+        "latestValue": "U8X8_PIN_NONE",
+        "subsystem": "DISPLAY"
+      },
+      {
+        "name": "DISPLAY_CS_PIN",
+        "latestValue": "U8X8_PIN_NONE",
+        "subsystem": "DISPLAY"
+      },
+      {
+        "name": "DISPLAY_RS_PIN",
+        "latestValue": "U8X8_PIN_NONE",
+        "subsystem": "DISPLAY"
+      },
+      {
+        "name": "UPDATES_PER_SEC",
+        "latestValue": "10",
+        "subsystem": "DISPLAY"
+      },
+      {
+        "name": "YIELDING_WIRE_CB",
+        "latestValue": "false",
+        "subsystem": "DISPLAY"
+      },
+      {
+        "name": "USE_UTF8_SUPPORT",
+        "latestValue": "false",
+        "subsystem": "DISPLAY"
+      },
+      {
+        "name": "SW_POLLING_MODE",
+        "latestValue": "SWITCHES_NO_POLLING",
+        "subsystem": "INPUT"
+      },
+      {
+        "name": "SWITCH_IODEVICE",
+        "latestValue": "devicePins",
+        "subsystem": "INPUT"
+      },
+      {
+        "name": "ENCODER_PIN_A",
+        "latestValue": "23",
+        "subsystem": "INPUT"
+      },
+      {
+        "name": "ENCODER_PIN_B",
+        "latestValue": "19",
+        "subsystem": "INPUT"
+      },
+      {
+        "name": "ENCODER_PIN_OK",
+        "latestValue": "25",
+        "subsystem": "INPUT"
+      },
+      {
+        "name": "ENCODER_BACK_PIN",
+        "latestValue": "-1",
+        "subsystem": "INPUT"
+      },
+      {
+        "name": "ENCODER_NEXT_PIN",
+        "latestValue": "-1",
+        "subsystem": "INPUT"
+      },
+      {
+        "name": "PULLUP_LOGIC",
+        "latestValue": "true",
+        "subsystem": "INPUT"
+      },
+      {
+        "name": "ENCODER_IS_QUARTER_CYCLE",
+        "latestValue": "false",
+        "subsystem": "INPUT"
+      },
+      {
+        "name": "ITEM_FONT",
+        "latestValue": "def:,1",
+        "subsystem": "THEME"
+      },
+      {
+        "name": "TITLE_FONT",
+        "latestValue": "def:,1",
+        "subsystem": "THEME"
+      },
+      {
+        "name": "TITLE_BORDER_WIDTH",
+        "latestValue": "1",
+        "subsystem": "THEME"
+      },
+      {
+        "name": "TITLE_TO_ITEM_SPACING",
+        "latestValue": "2",
+        "subsystem": "THEME"
+      },
+      {
+        "name": "TITLE_SHOW_MODE",
+        "latestValue": "TITLE_FIRST_ROW",
+        "subsystem": "THEME"
+      },
+      {
+        "name": "USE_TC_UNICODE",
+        "latestValue": "false",
+        "subsystem": "THEME"
+      }
+    ],
+    "namingRecursive": false,
+    "useCppMain": false,
+    "saveLocation": "ALL_TO_CURRENT",
+    "usingSizedEEPROMStorage": true,
+    "eepromDefinition": "eeprom:",
+    "authenticatorDefinition": "",
+    "projectIoExpanders": [
+      "deviceIO:"
+    ],
+    "menuInMenuCollection": {
+      "menuDefinitions": []
+    },
+    "packageNamespace": "",
+    "appIsModular": false
+  },
+  "stringLists": []
+}
