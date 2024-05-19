@@ -9,20 +9,31 @@ You should have received a copy of the GNU General Public License along with thi
 /* This piece of software controls the Cave Box. 
   Please refer to https://sholtosworkshop.com/ for documentation. 
   There is also a Contact section if you want to ask questions about the code.
- 
+
+  Version 1.02 has outputs for relays programmed in.
+  Version 1.03 uses AHT20
 */
-#define FIRMWARE_VERSION "1.01"
+#define FIRMWARE_VERSION "1.03"
+//#define USE_PCB_OLED_V2 //Second milled board, first to use oled screen
+//#define USE_PCB_OLED_MODIFIED_PERFBOARD // 1st board made with perfboard, OLED added later
+#define USE_PCB_OLED_V3 //3rd milled board, has oled screen and bought mister board.
+
+//#define USE_DHT22_SENSOR
+#define USE_AHT20_SENSOR
 
 #include "shroom_room_oled_tc_menu_menu.h"
 #include "Wire.h"
 #include "EEPROM.h"
-#include "DHT.h"
+#ifdef USE_DHT22_SENSOR
+  #include "DHT.h"
+#endif
+#ifdef USE_AHT20_SENSOR
+  #include <Adafruit_AHTX0.h>
+#endif
 #include <PID_v1.h>
 #include <FastLED.h>
 
-//#define USE_PCB_OLED_V2 //Second milled board, first to use oled screen
-//#define USE_PCB_OLED_MODIFIED_PERFBOARD // 1st board made with perfboard, OLED added later
-#define USE_PCB_OLED_V3 //3rd milled board, has oled screen and bought mister board.
+
 
 #define PRESET_ARRAY_ADDRESS 28 //Address after tcMenu items, needs to be updated if more EERPOM using variables are created with tcMenu.
 
@@ -45,6 +56,16 @@ You should have received a copy of the GNU General Public License along with thi
   const int FAN_TACH_PIN = 4;
   const int WS2812_PIN = 5;
   const int PROG_FREQ_PIN = 33;
+  #ifdef USE_AHT20_SENSOR
+    const int AHT_SCL_PIN = 27;
+    const int AHT_SDA_PIN = 17;
+  #endif
+
+
+  //Following are output pins to connect SSR to to use the Cave Box as a controller for AC equipement
+  const int EXT_FAN_PIN = 32; //pin 6 on header red LED testing
+  const int EXT_HUMIDIFIER_PIN = 33; //pin 5 on header, green LED for testing
+  const int EXT_LIGHT_PIN = 26; //pin 4 on header, yellow LED for testing
 #endif
 
 #ifdef USE_PCB_OLED_MODIFIED_PERFBOARD
@@ -86,7 +107,7 @@ bool isMisterOn;
 bool fanTachState = 1;
 int loopCount;
 
-double RH, temp; //Stores the current relative humidity and temperature values.
+double RH, T; //Stores the current relative humidity and temperature values.
 
 //// PID Stuff ////
 double RHInput, RHOutput; //Relative humidity
@@ -124,8 +145,15 @@ struct preset { //https://arduino.stackexchange.com/questions/25945/how-to-read-
 
 CRGB leds[NUM_LEDS];
 
-DHT dht(DHT_PIN, DHT22);
+#ifdef USE_DHT22_SENSOR
+  DHT dht(DHT_PIN, DHT22);
+#endif
 
+#ifdef USE_AHT20_SENSOR
+  Adafruit_AHTX0 aht;
+  TwoWire I2CAHT = TwoWire(1); // Use 2nd i2c interface for sensor.
+#endif
+  
 PID RHPID(&RHInput, &RHOutput, &RHSetPoint, RHKp, RHKi, RHKd, DIRECT); 
 
 const char ErrorWarningPgm[] PROGMEM = "WARNING";
@@ -135,12 +163,28 @@ void setup() {
   EEPROM.begin(512);
   setupMenu();
   Wire.begin();
-  dht.begin();
 
+  #ifdef USE_DHT22_SENSOR
+    dht.begin();
+  #endif
+  
+  #ifdef USE_AHT20_SENSOR
+    I2CAHT.begin(AHT_SDA_PIN, AHT_SCL_PIN, 100000);
+//    aht.begin(&I2CAHT);
+//    Serial.println("i2c init");
+    if (! aht.begin(&I2CAHT)) {
+      Serial.println("Could not find AHT? Check wiring");
+    }
+  #endif
+  
   pinMode(MISTER_PIN, OUTPUT);
   pinMode(FAN_PIN, OUTPUT);
   pinMode(FAN_TACH_PIN, INPUT_PULLUP);
   pinMode(PROG_FREQ_PIN, OUTPUT);
+
+  pinMode(EXT_FAN_PIN, OUTPUT);
+  pinMode(EXT_HUMIDIFIER_PIN, OUTPUT);
+  pinMode(EXT_LIGHT_PIN, OUTPUT);
 
   //tell the PID to range between 0 and the full window size
   RHPID.SetOutputLimits(0, LOOP_TIME);
@@ -222,10 +266,15 @@ void initController() {
 void deinitController() {
   //When the controller is switched off this function should be called to make sure everything is off.
   digitalWrite(FAN_PIN, LOW);
+  digitalWrite(EXT_FAN_PIN, LOW);
+  
   ledcWrite(0, 0);// 0% duty cycle
+  digitalWrite(EXT_HUMIDIFIER_PIN, LOW);
+  
   isMisterOn = 0;
   leds[0] = CHSV(colour, 255, 0);
   FastLED.show();
+  digitalWrite(EXT_LIGHT_PIN, LOW);
 }
 
 int updateDHT() {
@@ -233,12 +282,24 @@ int updateDHT() {
   // return 2 indicates fresh readings, 1 means error, 0 is nothing happened.  
   if (millis() - loopStartTime > LOOP_TIME) { // Following section runs every 2 seconds.
     loopStartTime += LOOP_TIME;
-    RH = dht.readHumidity();
-    temp = dht.readTemperature();
-  
+
+    #ifdef USE_DHT22_SENSOR
+      RH = dht.readHumidity();
+      T = dht.readTemperature();
+    #endif
+    
+    #ifdef USE_AHT20_SENSOR
+      sensors_event_t humidity;
+      sensors_event_t temp;
+      aht.getEvent(&humidity, &temp);
+      RH = humidity.relative_humidity;
+      T = temp.temperature;
+    #endif
+    
+    
     // Check if any reads failed and exit early (to try again).
-    if (isnan(RH) || isnan(temp)) {
-      Serial.println(F("Failed to read from DHT sensor!"));
+    if (isnan(RH) || isnan(T) || RH == 0.0 || T == 0.0 ) {
+      Serial.println(F("Failed to read from humidity sensor!"));
 //      LEDWarningColour();
       newColour = WARNING_COLOUR;
       strcpy(RHString, "Error");
@@ -247,15 +308,15 @@ int updateDHT() {
       menuTString.setTextValue(tempString);
       return 1; //Restart the loop and hopefully get a result next time.
     }
-    
+
     RHColour = map((int)RH, 0, 100, 32, 160); //LED shows humidity,orange is low to blue is high.
     newColour = RHColour;
     
     sprintf(RHString, " %d%%", int(RH)); //Convert relative humidity to string to display on OLED.
     menuRHString.setTextValue(RHString); //Show the value on OLED.
-    sprintf(tempString, " %d°C", int(temp)); //Convert relative humidity to string to display on OLED.
+    sprintf(tempString, " %d°C", int(T)); //Convert relative humidity to string to display on OLED.
     menuTString.setTextValue(tempString);
-  
+
     RHInput = RH;
     RHPID.Compute();
     
@@ -325,10 +386,12 @@ void updateLED() {
       if (menuEnableLED.getBoolean()) { // If the user wants the LED on:
         leds[0] = CHSV(colour, 255, sinArray[ledLoopPos]);
         FastLED.show(); 
+        digitalWrite(EXT_LIGHT_PIN, HIGH);
       }
       else {
         leds[0] = CHSV(0, 0, 0);
         FastLED.show(); 
+        digitalWrite(EXT_LIGHT_PIN, LOW);
       }
       
       ledLoopPos += 1;
@@ -340,10 +403,12 @@ void updateLED() {
     if (menuEnableLED.getBoolean()) {
       leds[0] = CHSV(255, 0, 255); 
       FastLED.show();
+      digitalWrite(EXT_LIGHT_PIN, HIGH);
     }
     else {
       leds[0] = CHSV(0, 0, 0);
       FastLED.show(); 
+      digitalWrite(EXT_LIGHT_PIN, LOW);
     }
   }
 }
@@ -405,9 +470,11 @@ void fanControl() {
   //actually control the fan here, after all the different things that can affect it have had their say via activateFan
   if (activateFan && menuenableFan.getBoolean()){
     digitalWrite(FAN_PIN, HIGH);
+    digitalWrite(EXT_FAN_PIN, HIGH);
   }
   else {
     digitalWrite(FAN_PIN, LOW);
+    digitalWrite(EXT_FAN_PIN, LOW);
   }
 }
 
@@ -452,6 +519,7 @@ void measureAirExchangeTime() {
   
   //For this to work RHSetPoint must be greater than external RH, Ideally the setpoint you're going to be running at.
   digitalWrite(FAN_PIN, HIGH);
+  digitalWrite(EXT_FAN_PIN, HIGH);
   
   while(RH < presetArr[menuPresets.getCurrentValue()].RHSetPoint){
     if (updateDHT() == 1) { continue; }
@@ -474,6 +542,7 @@ void measureAirExchangeTime() {
   Serial.print("Start time ");
   Serial.println(measureAirExchangeStartTime);
   digitalWrite(FAN_PIN, HIGH);
+  digitalWrite(EXT_FAN_PIN, HIGH);
   initController();
   while (RH > finalRH){
     while (updateDHT() != 2){ }//Just loop in this while until updateDHT returns 2 meaning fresh readings   
@@ -487,6 +556,7 @@ void measureAirExchangeTime() {
   Serial.print("Air exchange time ");
   Serial.println(FAEOnTime);
   digitalWrite(FAN_PIN, LOW);
+  digitalWrite(EXT_FAN_PIN, LOW);
   SaveSettingsCallback(17); //Save new value.
 }
 
@@ -502,6 +572,7 @@ void increaseRH() {
     activateFan = 1;
     fanOnStartTime = millis();
     ledcWrite(0, 119);// 119/255=47% duty cycle
+    digitalWrite(EXT_HUMIDIFIER_PIN, HIGH);
     isMisterOn = 1;
   }
 }
@@ -512,6 +583,7 @@ void decreaseRH() {
     //Serial.println("decRH");
     
     ledcWrite(0, 0);// 0% duty cycle
+    digitalWrite(EXT_HUMIDIFIER_PIN, LOW);
     isMisterOn = 0;
   }
 }
@@ -684,6 +756,7 @@ void CALLBACK_FUNCTION enableLEDCallback(int id) {
     else {
       leds[0] = CHSV(colour, 255, 0);
       FastLED.show();
+      digitalWrite(EXT_LIGHT_PIN, LOW);
     }
 }
 
@@ -776,7 +849,7 @@ void CALLBACK_FUNCTION PrintSettingsCallback(int id) {
     Serial.print("menuRHSetPoint ");
     Serial.println(menuRHSetPoint.getAsFloatingPointValue());
     Serial.print("Temp C ");
-    Serial.println(temp);
+    Serial.println(T);
     Serial.println();
     
     Serial.print("FAEOnTime (ms) ");
