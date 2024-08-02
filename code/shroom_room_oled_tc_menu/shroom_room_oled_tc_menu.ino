@@ -10,15 +10,28 @@ You should have received a copy of the GNU General Public License along with thi
   Please refer to https://sholtosworkshop.com/ for documentation. 
   There is also a Contact section if you want to ask questions about the code.
 
+  Compile as ESP32 -WROOM-DA_MODULE
+  or ESP32 Dev Module on boards with holes and without overhanging esp antenna
+
   Version 1.02 has outputs for relays programmed in.
   Version 1.03 uses AHT20
+  Version 1.04 has a more sophisticated fan error prcedure.
+
+Changed ubuntu vrsion to 22 steps taken to get to compile:
+
+faeinterval hardcoded vals to ints not floats
+updated tcmenu and dependencies
+esp32 back to v2
+
+
+
 */
-#define FIRMWARE_VERSION "1.03"
+#define FIRMWARE_VERSION "1.04"
 //#define USE_PCB_OLED_V2 //Second milled board, first to use oled screen
 //#define USE_PCB_OLED_MODIFIED_PERFBOARD // 1st board made with perfboard, OLED added later
 #define USE_PCB_OLED_V3 //3rd milled board, has oled screen and bought mister board.
 
-//#define USE_DHT22_SENSOR
+// #define USE_DHT22_SENSOR
 #define USE_AHT20_SENSOR
 
 #include "shroom_room_oled_tc_menu_menu.h"
@@ -105,6 +118,7 @@ double RHSetPoint; //%  Relative humidity setpoint for PID.
 char RHString[11], tempString[11], newRHMsg[11]; //Stores the relative humidity as a string
 bool isMisterOn;
 bool fanTachState = 1;
+bool fanErrorTriggered = 0; //Fan Error only triggers once after restarting to indicate something might be wrong.
 int loopCount;
 
 double RH, T; //Stores the current relative humidity and temperature values.
@@ -131,16 +145,16 @@ struct preset { //https://arduino.stackexchange.com/questions/25945/how-to-read-
   unsigned long FAEInterval;
 
 } presetArr[] = {
-  {0.0, 0.0},
-  {0.0, 0.0},
-  {0.0, 0.0},
-  {0.0, 0.0},
-  {0.0, 0.0},
-  {0.0, 0.0},
-  {0.0, 0.0},
-  {0.0, 0.0},
-  {0.0, 0.0},
-  {0.0, 0.0}
+  {0.0, 0},
+  {0.0, 0},
+  {0.0, 0},
+  {0.0, 0},
+  {0.0, 0},
+  {0.0, 0},
+  {0.0, 0},
+  {0.0, 0},
+  {0.0, 0},
+  {0.0, 0}
 };
 
 CRGB leds[NUM_LEDS];
@@ -192,7 +206,7 @@ void setup() {
   //turn on pid for humidity controller
   RHPID.SetMode(AUTOMATIC);
   
-  // ledc used to generate squarewave to control the mister. TODO see if there is optimum duty cycle.
+  // // ledc used to generate squarewave to control the mister. TODO see if there is optimum duty cycle.
   ledcSetup(0, 109000, 8); //channel 0, 109kHz, 8 bits resolution, though perhaps require much less
   ledcAttachPin(MISTER_PIN, 0);
 
@@ -430,7 +444,10 @@ void fanControl() {
   }
   //The interval that starts the error is set in the following section and is a bit arbitrary, it governs how long 
   //after the fan tach signal stops the error state triggers.
-  if (activateFan && fanTachInterval > 1000 && menuenableFan.getBoolean()) { //if fan should be on but its more than 1000ms since the tach changed state flag an error.
+  if (activateFan && fanTachInterval > 1000 && menuenableFan.getBoolean() && !fanErrorTriggered) { 
+    //if fan should be on but its more than 1000ms since the tach changed state flag an error. 
+    // If fan error has already triggered and been cleared then fan is working its just the sensing 
+    // thats gone wrong and I don't want devices to brick because of this.
     fanErrorState();
     return;
   }
@@ -615,6 +632,7 @@ void fanErrorState() {
   menuControllerBool.setBoolean(0);
   //Make the error noticable by changing the colour to solid red.
   LEDWarningColour();
+  fanErrorTriggered = 1; //Now the error wont trigger again until the Cave Box is restarted.
 
   // Produces dialog describing the issue
   withMenuDialogIfAvailable([] (MenuBasedDialog* dlg) {
@@ -674,7 +692,7 @@ void onFactoryResetDialogFinished(ButtonType btnPressed, void* /*userdata*/) {
     menuenableFan.setBoolean(1);
     menuLEDShowRH.setBoolean(1);
     menuLightOnTime.setFromFloatingPointValue(24.0);
-    menuMaxRH.setFromFloatingPointValue(98.0);
+    menuMaxRH.setFromFloatingPointValue(96.0);
     
     menuPresets.setCurrentValue(1);
     
@@ -682,18 +700,18 @@ void onFactoryResetDialogFinished(ButtonType btnPressed, void* /*userdata*/) {
     // All parameters are from Stamets Growing Gourmet and Medicinal Mushrooms
     // Where a range of values stated I chose the middle, and I rounded down.
     preset newPresetArr[] = {
-    {95.0, 450000.0}, //Pin 95% 8FAE, very high humidity and lots of fresh air exchange
-    {85.0, 600000.0}, //Fruit 85% 6FAE, moderate humidity and FAE
-    {87.0, 900000.0}, //Oyster 87% 4FAE
-    {92.0, 600000.0}, //Lions Mane 92% 6FAE
-    {70.0, 600000.0}, //Shiitake 70% 6FAE
-    {92.0, 900000.0}, //Reishi 92% 4FAE as Stamets doesn't specify.
-    {85.0, 600000.0}, //Custom1 85% 6FAE, moderate humidity and FAE User can decide.
-    {85.0, 600000.0}, //Custom2 85% 6FAE, moderate humidity and FAE User can decide.
-    {85.0, 600000.0}, //Custom3 85% 6FAE, moderate humidity and FAE User can decide.
-    {85.0, 600000.0}, //Custom4 85% 6FAE, moderate humidity and FAE User can decide.
-    {85.0, 600000.0}, //Custom5 85% 6FAE, moderate humidity and FAE User can decide.
-    {85.0, 600000.0}  //Custom6 85% 6FAE, moderate humidity and FAE User can decide.
+    {95.0, 450000}, //Pin 95% 8FAE, very high humidity and lots of fresh air exchange
+    {85.0, 600000}, //Fruit 85% 6FAE, moderate humidity and FAE
+    {87.0, 900000}, //Oyster 87% 4FAE
+    {92.0, 600000}, //Lions Mane 92% 6FAE
+    {70.0, 600000}, //Shiitake 70% 6FAE
+    {92.0, 900000}, //Reishi 92% 4FAE as Stamets doesn't specify.
+    {85.0, 600000}, //Custom1 85% 6FAE, moderate humidity and FAE User can decide.
+    {85.0, 600000}, //Custom2 85% 6FAE, moderate humidity and FAE User can decide.
+    {85.0, 600000}, //Custom3 85% 6FAE, moderate humidity and FAE User can decide.
+    {85.0, 600000}, //Custom4 85% 6FAE, moderate humidity and FAE User can decide.
+    {85.0, 600000}, //Custom5 85% 6FAE, moderate humidity and FAE User can decide.
+    {85.0, 600000}  //Custom6 85% 6FAE, moderate humidity and FAE User can decide.
     };
     memcpy(presetArr, newPresetArr, sizeof(presetArr));
     
